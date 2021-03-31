@@ -42,10 +42,9 @@ let db = new sqlite3.Database('./db/test.db', (err) => {
 
 
 app.post('/api/employees', authenticateJWT, (req, res) => {
-  const {first_name, last_name, email, phone, address, address_two, city, state, zip, user_id, date_changed} = req.body;
-  
-  db.run('insert into employees values (?,?,?,?,?,?,?,?,?,?,?)', [first_name, last_name, email, phone, address, address_two, city, state, zip, user_id, date_changed], (err) => {
-     if (err) {
+  const {first_name, last_name, email, phone, address, address_two, city, state, zip, user_id, date_changed, date_added} = req.body;
+  db.run('insert into employees (first_name, last_name, email, phone, address, address_two, city, state, zip, user_id, date_changed, date_added) values (?,?,?,?,?,?,?,?,?,?,?,?)', [first_name, last_name, email, phone, address, address_two, city, state, zip, user_id, date_changed, date_added], (err) => {
+    if (err) {
       return console.log(err.message);
      }
      res.status(200).json({'hello':'allowed'})
@@ -60,7 +59,6 @@ app.get('/api/employees', authenticateJWT, (req, res) => {
     if (err) {
       return console.log(err.message);
     }
-
     res.status(200).json(JSON.stringify(json))
 
   })
