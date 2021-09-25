@@ -54,13 +54,54 @@ app.post('/api/employees', authenticateJWT, (req, res) => {
 })
 
 
-app.get('/api/employees', authenticateJWT, (req, res) => {
+app.get('/api/employees', authenticateJWT,  (req, res) => {
   db.all('select * from employees', (err, json) => {
     if (err) {
       return console.log(err.message);
     }
     res.status(200).json(JSON.stringify(json))
 
+  })
+})
+
+app.get('/api/triggers', authenticateJWT, (req, res) => {
+  db.all(`select * from triggers where tusername = '${req.query.authuser}'`, (err, json) => {
+    if (err) {
+      return console.log(err.message);
+    }
+    res.status(200).json(JSON.stringify(json))
+
+  })
+})
+
+app.post('/api/triggers', authenticateJWT, (req, res) => {
+  const {tname, taction, tusername} = req.body;
+  db.run('insert into triggers (tname, taction, tusername) values (?,?,?)', [tname, taction, tusername], (err) => {
+    if (err) {
+      return console.log(err.message);
+     }
+     res.status(200).json({'hello':'allowed'})
+  }) 
+})
+
+app.put('/api/triggers', authenticateJWT, (req, res) => {
+  const {tid, tname, taction, tusername} = req.body;
+  db.run('update triggers set tname = ?, taction = ? where id = ? and tusername = ?', [tname, taction, tid, tusername], (err) => {
+    if (err) {
+      return console.log(err.message);
+     }
+     res.status(200).json({'hello':'allowed'})
+  }) 
+})
+
+app.delete('/api/triggers', authenticateJWT, (req, res) => {
+  console.log('deletehappening')
+  const {tid, tusername} = req.body;
+  db.run('delete from triggers where id = ? and tusername = ?', [tid, tusername], (err)=>{
+    if (err) {
+      return console.log(err.message);
+    }
+    res.status(200).json({'hello':'allowed'})
   })
 })
 
