@@ -169,6 +169,18 @@ app.post('/api/signup', async (req, res) => {
     }
     // get the last insert id
     console.log(`A row has been inserted with rowid ${this.lastID}`);
+    db.get('select * from users where rowid = ?', [this.lastID], async function(err, row){
+      if(row) {
+        const token = jwt.sign({ username: row.username,  role: 'admin' }, accessTokenSecret);
+        const username = row.username;
+    
+        res.status(200).json({
+          token,
+          username
+        })
+      }
+    })
+
   });
 })
 
