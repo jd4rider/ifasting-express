@@ -159,6 +159,19 @@ app.post('/signup', async (req, res) => {
   });
 })
 
+app.post('/api/signup', async (req, res) => {
+  const salt = await bcrypt.genSalt(10);
+  const { username, password, fname, lname } = req.body;
+
+  db.run('insert into users values (?,?,?,?,?)', [username, fname, lname, await bcrypt.hash(password, salt), 'admin'], function(err) {
+    if (err) {
+      return console.log(err.message);
+    }
+    // get the last insert id
+    console.log(`A row has been inserted with rowid ${this.lastID}`);
+  });
+})
+
 app.get('/', (req, res) => {
   res.send('Hello World!')
 })
@@ -167,15 +180,4 @@ app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
 })
 
-app.get('/setupsuper', async (req, res) => {
-  const salt = await bcrypt.genSalt(10);
-
-  db.run('insert into users values (?,?,?,?,?)', ['jd4rider', 'Jonathan', 'Forrider', await bcrypt.hash("password", salt), 'admin'], function(err) {
-    if (err) {
-      return console.log(err.message);
-    }
-    // get the last insert id
-    console.log(`A row has been inserted with rowid ${this.lastID}`);
-  });
-})
 
