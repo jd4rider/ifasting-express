@@ -163,7 +163,7 @@ app.post('/api/signup', async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   const { username, password, fname, lname } = req.body;
 
-  db.run('insert into users values (?,?,?,?,?)', [username, fname, lname, await bcrypt.hash(password, salt), 'admin'], function(err) {
+  db.run('insert into users values (?,?,?,?,?)', [username, fname, lname, await bcrypt.hash(password, salt), 'user'], function(err) {
     if (err) {
       return console.log(err.message);
     }
