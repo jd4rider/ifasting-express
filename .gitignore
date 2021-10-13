@@ -116,7 +116,7 @@ dist
 .pnp.*
 
 # database
-*.db 
-test.db 
+# *.db 
+# test.db 
 
 
