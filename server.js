@@ -163,9 +163,10 @@ app.post('/api/signup', async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   const { username, password, fname, lname } = req.body;
 
-  db.run('insert into users values (?,?,?,?,?)', [username, fname, lname, await bcrypt.hash(password, salt), 'user'], function(err) {
+  db.run('insert into users (username, fname, lname, password, role) values (?,?,?,?,?)', [username, fname, lname, await bcrypt.hash(password, salt), 'user'], function(err) {
     if (err) {
-      return console.log(err.message);
+      if(err.message.includes('UNIQUE')) return res.status(201).json({ error: "User Already Exists" });
+      else return console.log(err.message);
     }
     // get the last insert id
     console.log(`A row has been inserted with rowid ${this.lastID}`);
@@ -184,8 +185,43 @@ app.post('/api/signup', async (req, res) => {
   });
 })
 
+app.post('/api/workspace/save', authenticateJWT, async (req, res) => {
+  const { title, html, css, js, username } = req.body;
+  const created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+  db.run('insert into workspaces (title, html, css, js, timestamp, user) values (?,?,?,?,?,?)', [title, html, css, js, created_at, username], function(err) {
+    if (err) {
+      return console.log(err.message);
+    }
+    // get the last insert id
+    console.log(`A row has been inserted with rowid ${this.lastID}`);
+    res.status(200).json({'hello':'allowed'})
+
+  });
+})
+
 app.get('/', (req, res) => {
   res.send('Hello World!')
+})
+
+app.get('/makeworkspace', (req, res) => {
+
+  db.run(`CREATE TABLE workspaces (
+                                  ID        INTEGER  PRIMARY KEY,
+                                  TITLE     CHAR,
+                                  HTML      BLOB,
+                                  CSS       BLOB,
+                                  JS        BLOB,
+                                  TIMESTAMP DATETIME,
+                                  USER               REFERENCES users (username) 
+                                )` , function(err) {
+  if (err) {
+    return console.log(err.message);
+  }
+  // get the last insert id
+  res.send('Table Created')
+
+});
 })
 
 app.listen(port, () => {
