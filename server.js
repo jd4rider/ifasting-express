@@ -204,25 +204,6 @@ app.get('/', (req, res) => {
   res.send('Hello World!')
 })
 
-app.get('/makeworkspace', (req, res) => {
-
-  db.run(`CREATE TABLE workspaces (
-                                  ID        INTEGER  PRIMARY KEY,
-                                  TITLE     CHAR,
-                                  HTML      BLOB,
-                                  CSS       BLOB,
-                                  JS        BLOB,
-                                  TIMESTAMP DATETIME,
-                                  USER               REFERENCES users (username) 
-                                )` , function(err) {
-  if (err) {
-    return console.log(err.message);
-  }
-  // get the last insert id
-  res.send('Table Created')
-
-});
-})
 
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
