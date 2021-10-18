@@ -40,16 +40,18 @@ app.use(express.json());
 //   }
 //   console.log('Connected to the database.');
 // });
+let localdbhost =
+{
+  host: process.env.MYSQL_HOST, 
+  port: process.env.MYSQL_PORT,
+  user: process.env.MYSQL_USER, 
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DB
+}
 
-let db = mariadb.createConnection(
-  {
-    host: process.env.MYSQL_HOST, 
-    port: process.env.MYSQL_PORT,
-    user: process.env.MYSQL_USER, 
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DB
-  }
-)
+let dbhost = process.env.JAWSDB_MARIA_URL || localdbhost
+
+let db = mariadb.createConnection(dbhost)
 
 db.connect(function (err) {
   // Check if there is a connection error
