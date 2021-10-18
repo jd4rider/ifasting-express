@@ -1,6 +1,5 @@
 require("dotenv").config();
 const bcrypt = require("bcrypt");
-const sqlite3 = require('sqlite3').verbose();
 const express = require('express')
 var cors = require('cors')
 const app = express()
