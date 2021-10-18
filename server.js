@@ -119,7 +119,7 @@ app.post('/api/signup', async (req, res) => {
 
   db.query('insert into users (username, fname, lname, password, userrole) values (?,?,?,?,?)', [username, fname, lname, await bcrypt.hash(password, salt), 'user'], function(err, result) {
     if (err) {
-      if(err.message.includes('UNIQUE')) return res.status(201).json({ error: "User Already Exists" });
+      if(err.message.includes('Duplicate')) return res.status(201).json({ error: "User Already Exists" });
       else return console.log(err.message);
     }
     // get the last insert id
