@@ -143,15 +143,32 @@ app.post('/api/signup', async (req, res) => {
 app.post('/api/workspace/save', authenticateJWT, async (req, res) => {
   const { title, html, css, js, username } = req.body;
   const created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+ 
+  db.query('select id from users where username = ?', [username], (err, rows) => {
+    db.query('insert into workspaces (title, html, css, js, wstimestamp, userid) values (?,?,?,?,?,?)', [title, html, css, js, created_at, rows[0].id], function(err, result) {
+      if (err) {
+        return console.log(err.message);
+      }
+      // get the last insert id
+      console.log(`A row has been inserted with id ${result.insertId}`);
+      res.status(200).json({'hello':'allowed'})
 
-  db.query('insert into workspaces (title, html, css, js, wstimestamp, userid) values (?,?,?,?,?,?)', [title, html, css, js, created_at, username], function(err, result) {
-    if (err) {
-      return console.log(err.message);
-    }
-    // get the last insert id
-    console.log(`A row has been inserted with id ${result.lastID}`);
-    res.status(200).json({'hello':'allowed'})
+    });
+  });
+})
 
+app.get('/api/workspace/get/all/:username', authenticateJWT,  async (req, res) => {
+  const username = req.params.username || 'none';
+
+  db.query('select id from users where username = ?', [username], (err, rows) => {
+    db.query('select workspaces.*, CONVERT(html USING utf8) as parsedhtml, CONVERT(js USING utf8) as parsedjs, CONVERT(css USING utf8) as parsedcss from workspaces where userid = ?', [rows[0].id], function(err, result) {
+      if (err) {
+        return console.log(err.message);
+      }
+      // get the last insert id
+      res.status(200).json(result)
+
+    });
   });
 })
 
