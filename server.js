@@ -1,10 +1,12 @@
+require("dotenv").config();
 const bcrypt = require("bcrypt");
 const sqlite3 = require('sqlite3').verbose();
 const express = require('express')
 var cors = require('cors')
 const app = express()
-const port = 5000
+const port = process.env.PORT
 const jwt = require('jsonwebtoken');
+const mariadb = require('mariadb/callback');
 
 
 
@@ -33,93 +35,49 @@ app.use(cors())
 
 app.use(express.json());
 
-let db = new sqlite3.Database('./db/test.db', (err) => {
-  if (err) {
-    console.error(err.message);
+// let db = new sqlite3.Database('./db/test.db', (err) => {
+//   if (err) {
+//     console.error(err.message);
+//   }
+//   console.log('Connected to the database.');
+// });
+
+let db = mariadb.createConnection(
+  {
+    host: process.env.MYSQL_HOST, 
+    port: process.env.MYSQL_PORT,
+    user: process.env.MYSQL_USER, 
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DB
   }
-  console.log('Connected to the database.');
+)
+
+db.connect(function (err) {
+  // Check if there is a connection error
+  if (err) {
+      console.log("connection error", err.stack);
+      return;
+  }
+
+  // If there was no error, print this message
+  console.log(`connected to database`);
 });
-
-
-app.post('/api/employees', authenticateJWT, (req, res) => {
-  const {first_name, last_name, email, phone, address, address_two, city, state, zip, user_id, date_changed, date_added} = req.body;
-  db.run('insert into employees (first_name, last_name, email, phone, address, address_two, city, state, zip, user_id, date_changed, date_added) values (?,?,?,?,?,?,?,?,?,?,?,?)', [first_name, last_name, email, phone, address, address_two, city, state, zip, user_id, date_changed, date_added], (err) => {
-    if (err) {
-      return console.log(err.message);
-     }
-     res.status(200).json({'hello':'allowed'})
-  })
-
-  
-})
-
-
-app.get('/api/employees', authenticateJWT,  (req, res) => {
-  db.all('select * from employees', (err, json) => {
-    if (err) {
-      return console.log(err.message);
-    }
-    res.status(200).json(JSON.stringify(json))
-
-  })
-})
-
-app.get('/api/triggers', authenticateJWT, (req, res) => {
-  db.all(`select * from triggers where tusername = '${req.query.authuser}'`, (err, json) => {
-    if (err) {
-      return console.log(err.message);
-    }
-    res.status(200).json(JSON.stringify(json))
-
-  })
-})
-
-app.post('/api/triggers', authenticateJWT, (req, res) => {
-  const {tname, taction, tusername} = req.body;
-  db.run('insert into triggers (tname, taction, tusername) values (?,?,?)', [tname, taction, tusername], (err) => {
-    if (err) {
-      return console.log(err.message);
-     }
-     res.status(200).json({'hello':'allowed'})
-  }) 
-})
-
-app.put('/api/triggers', authenticateJWT, (req, res) => {
-  const {tid, tname, taction, tusername} = req.body;
-  db.run('update triggers set tname = ?, taction = ? where id = ? and tusername = ?', [tname, taction, tid, tusername], (err) => {
-    if (err) {
-      return console.log(err.message);
-     }
-     res.status(200).json({'hello':'allowed'})
-  }) 
-})
-
-app.delete('/api/triggers', authenticateJWT, (req, res) => {
-  console.log('deletehappening')
-  const {tid, tusername} = req.body;
-  db.run('delete from triggers where id = ? and tusername = ?', [tid, tusername], (err)=>{
-    if (err) {
-      return console.log(err.message);
-    }
-    res.status(200).json({'hello':'allowed'})
-  })
-})
 
 app.post('/api/login', async (req, res) => {
   // Read username and password from request body
   const { username, password } = req.body;
 
   // Filter user from the users array by username and password
-  db.get('select * from users where username = ?', [username], async function(err, row) {
+  db.query('select * from users where username = ?', [username], async function(err, row) {
     if (err) {
       return console.log(err.message);
     }
     if (row) {
       // check user password with hashed password stored in the database
-      const validPassword = await bcrypt.compare(password, row.password);
+      const validPassword = await bcrypt.compare(password, row[0].password);
       if (validPassword) {
-        const token = jwt.sign({ username: row.username,  role: row.role }, accessTokenSecret);
-        const username = row.username;
+        const token = jwt.sign({ username: row[0].username,  role: row[0].userrole }, accessTokenSecret);
+        const username = row[0].username;
     
         res.status(200).json({
           token,
@@ -132,30 +90,18 @@ app.post('/api/login', async (req, res) => {
       res.status(401).json({ error: "User does not exist" });
     }
   });
-
-
-  // if (user) {
-  //     // Generate an access token
-  //     const accessToken = jwt.sign({ username: user.username,  role: user.role }, accessTokenSecret);
-
-  //     res.json({
-  //         accessToken
-  //     });
-  // } else {
-  //     res.send('Username or password incorrect');
-  // }
 });
 
 
-app.post('/signup', async (req, res) => {
+app.get('/signup', async (req, res) => {
   const salt = await bcrypt.genSalt(10);
 
-  db.run('insert into users values (?,?,?,?,?)', ['jd4rider', 'Jonathan', 'Forrider', await bcrypt.hash("password", salt), 'admin'], function(err) {
+  db.query('insert into users (username, fname, lname, password, userrole) values (?,?,?,?,?)', ['na4rider', 'Nicole', 'Forrider', await bcrypt.hash("password", salt), 'admin'], function(err, result) {
     if (err) {
       return console.log(err.message);
     }
     // get the last insert id
-    console.log(`A row has been inserted with rowid ${this.lastID}`);
+    console.log(`A row has been inserted with rowid ${result.insertId}`);
   });
 })
 
@@ -163,17 +109,17 @@ app.post('/api/signup', async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   const { username, password, fname, lname } = req.body;
 
-  db.run('insert into users (username, fname, lname, password, role) values (?,?,?,?,?)', [username, fname, lname, await bcrypt.hash(password, salt), 'user'], function(err) {
+  db.query('insert into users (username, fname, lname, password, userrole) values (?,?,?,?,?)', [username, fname, lname, await bcrypt.hash(password, salt), 'user'], function(err, result) {
     if (err) {
       if(err.message.includes('UNIQUE')) return res.status(201).json({ error: "User Already Exists" });
       else return console.log(err.message);
     }
     // get the last insert id
-    console.log(`A row has been inserted with rowid ${this.lastID}`);
-    db.get('select * from users where rowid = ?', [this.lastID], async function(err, row){
+    console.log(`A row has been inserted with rowid ${result.insertId}`);
+    db.query('select * from users where rowid = ?', [result.insertId], async function(err, row){
       if(row) {
-        const token = jwt.sign({ username: row.username,  role: row.role }, accessTokenSecret);
-        const username = row.username;
+        const token = jwt.sign({ username: row[0].username,  role: row[0].userrole }, accessTokenSecret);
+        const username = row[0].username;
     
         res.status(200).json({
           token,
@@ -189,12 +135,12 @@ app.post('/api/workspace/save', authenticateJWT, async (req, res) => {
   const { title, html, css, js, username } = req.body;
   const created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-  db.run('insert into workspaces (title, html, css, js, timestamp, user) values (?,?,?,?,?,?)', [title, html, css, js, created_at, username], function(err) {
+  db.query('insert into workspaces (title, html, css, js, wstimestamp, userid) values (?,?,?,?,?,?)', [title, html, css, js, created_at, username], function(err, result) {
     if (err) {
       return console.log(err.message);
     }
     // get the last insert id
-    console.log(`A row has been inserted with rowid ${this.lastID}`);
+    console.log(`A row has been inserted with rowid ${result.lastID}`);
     res.status(200).json({'hello':'allowed'})
 
   });
