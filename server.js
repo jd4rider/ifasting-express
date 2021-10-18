@@ -56,7 +56,7 @@ if(process.env.JAWSDB_MARIA_URL) {
   jawsdb = jawsdb.replace('mysql', 'mariadb')
 } else jawsdb = undefined;
 
-let dbhost = jawsdb || localdbhost
+let dbhost = jawsdb || `mariadb://${process.env.MYSQL_USER}:${process.env.MYSQL_PASSWORD}@${process.env.MYSQL_HOST}:${process.env.MYSQL_PORT}/${process.env.MYSQL_DB}`
 
 let db = mariadb.createConnection(dbhost)
 
@@ -109,7 +109,7 @@ app.get('/signup', async (req, res) => {
       return console.log(err.message);
     }
     // get the last insert id
-    console.log(`A row has been inserted with rowid ${result.insertId}`);
+    console.log(`A row has been inserted with id ${result.insertId}`);
   });
 })
 
@@ -123,11 +123,12 @@ app.post('/api/signup', async (req, res) => {
       else return console.log(err.message);
     }
     // get the last insert id
-    console.log(`A row has been inserted with rowid ${result.insertId}`);
-    db.query('select * from users where rowid = ?', [result.insertId], async function(err, row){
-      if(row) {
-        const token = jwt.sign({ username: row[0].username,  role: row[0].userrole }, accessTokenSecret);
-        const username = row[0].username;
+    console.log(`A row has been inserted with id ${result.insertId}`);
+    db.query('select * from users where id = ?', [result.insertId], (err, rows) => {
+      console.log(rows)
+      if(rows) {
+        const token = jwt.sign({ username: rows[0].username,  role: rows[0].userrole }, accessTokenSecret);
+        const username = rows[0].username;
     
         res.status(200).json({
           token,
@@ -148,7 +149,7 @@ app.post('/api/workspace/save', authenticateJWT, async (req, res) => {
       return console.log(err.message);
     }
     // get the last insert id
-    console.log(`A row has been inserted with rowid ${result.lastID}`);
+    console.log(`A row has been inserted with id ${result.lastID}`);
     res.status(200).json({'hello':'allowed'})
 
   });
