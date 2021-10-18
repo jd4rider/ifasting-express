@@ -49,7 +49,14 @@ let localdbhost =
   database: process.env.MYSQL_DB
 }
 
-let dbhost = process.env.JAWSDB_MARIA_URL || localdbhost
+let jawsdb;
+
+if(process.env.JAWSDB_MARIA_URL) {
+  jawsdb = process.env.JAWSDB_MARIA_URL
+  jawsdb = jawsdb.replace('mysql', 'mariadb')
+} else jawsdb = undefined;
+
+let dbhost = jawsdb || localdbhost
 
 let db = mariadb.createConnection(dbhost)
 
