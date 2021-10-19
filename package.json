@@ -16,7 +16,6 @@
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
-    "mariadb": "^2.5.4",
-    "sqlite-json": "^1.1.0"
+    "mariadb": "^2.5.4"
   }
 }

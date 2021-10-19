@@ -104,7 +104,7 @@ app.post('/api/login', async (req, res) => {
 app.get('/signup', async (req, res) => {
   const salt = await bcrypt.genSalt(10);
 
-  db.query('insert into users (username, fname, lname, password, userrole) values (?,?,?,?,?)', ['na4rider', 'Nicole', 'Forrider', await bcrypt.hash("password", salt), 'admin'], function(err, result) {
+  db.query('insert into users (username, fname, lname, password, userrole) values (?,?,?,?,?)', ['jd4rider', 'Jonathan', 'Forrider', await bcrypt.hash("password", salt), 'admin'], function(err, result) {
     if (err) {
       return console.log(err.message);
     }
@@ -125,7 +125,6 @@ app.post('/api/signup', async (req, res) => {
     // get the last insert id
     console.log(`A row has been inserted with id ${result.insertId}`);
     db.query('select * from users where id = ?', [result.insertId], (err, rows) => {
-      console.log(rows)
       if(rows) {
         const token = jwt.sign({ username: rows[0].username,  role: rows[0].userrole }, accessTokenSecret);
         const username = rows[0].username;
@@ -140,12 +139,13 @@ app.post('/api/signup', async (req, res) => {
   });
 })
 
-app.post('/api/workspace/save', authenticateJWT, async (req, res) => {
-  const { title, html, css, js, username } = req.body;
-  const created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+app.post('/api/tracker/start', authenticateJWT, async (req, res) => {
+  console.log(req.body);
+  const { username } = req.body;
+  const starttime= new Date().toISOString().slice(0, 19).replace('T', ' ');
  
   db.query('select id from users where username = ?', [username], (err, rows) => {
-    db.query('insert into workspaces (title, html, css, js, wstimestamp, userid) values (?,?,?,?,?,?)', [title, html, css, js, created_at, rows[0].id], function(err, result) {
+    db.query('insert into tracker (starttime, userid) values (?,?)', [starttime, rows[0].id], function(err, result) {
       if (err) {
         return console.log(err.message);
       }
@@ -157,16 +157,57 @@ app.post('/api/workspace/save', authenticateJWT, async (req, res) => {
   });
 })
 
-app.get('/api/workspace/get/all/:username', authenticateJWT,  async (req, res) => {
+app.put('/api/tracker/end', authenticateJWT, async (req, res) => {
+  console.log(req.body);
+  const { username } = req.body;
+  const endtime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+ 
+  db.query('select id from users where username = ?', [username], (err, rows) => {
+    db.query('update tracker set endtime = ? where userid = ? and trim(endtime) is null', [endtime, rows[0].id], function(err, result) {
+      if (err) {
+        return console.log(err.message);
+      }
+      // get the last insert id
+      console.log(`A row has been updated at id ${result.insertId}`);
+      res.status(200).json({'hello':'allowed'})
+
+    });
+  });
+})
+
+app.get('/api/tracker/get/all/:username', authenticateJWT,  async (req, res) => {
   const username = req.params.username || 'none';
 
   db.query('select id from users where username = ?', [username], (err, rows) => {
-    db.query('select workspaces.*, CONVERT(html USING utf8) as parsedhtml, CONVERT(js USING utf8) as parsedjs, CONVERT(css USING utf8) as parsedcss from workspaces where userid = ?', [rows[0].id], function(err, result) {
+    db.query('select * from tracker where userid = ?', [rows[0].id], function(err, result) {
       if (err) {
         return console.log(err.message);
       }
       // get the last insert id
       res.status(200).json(result)
+
+    });
+  });
+})
+
+app.get('/api/tracker/get/unfinished/:username', authenticateJWT,  async (req, res) => {
+  const username = req.params.username || 'none';
+  const currdate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+  db.query('select id from users where username = ?', [username], (err, rows) => {
+    db.query('select * from tracker where userid = ? and trim(endtime) is null', [rows[0].id], function(err, result) {
+      if (err) {
+        return console.log(err.message);
+      }
+      // get the last insert id
+      var date1 = new Date(result[0].starttime)
+      var date2 = new Date(currdate)
+
+      var difference = date2.getTime()-date1.getTime();
+      var hours = Math.floor((difference / (1000*60*60)) % 24)
+      var hourselapsed = {hours : hours}
+      var resultret = [{...result[0], ...hourselapsed}]
+      res.status(200).json(resultret)
 
     });
   });
