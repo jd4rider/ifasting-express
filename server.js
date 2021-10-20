@@ -200,13 +200,18 @@ app.get('/api/tracker/get/unfinished/:username', authenticateJWT,  async (req, r
         return console.log(err.message);
       }
       // get the last insert id
-      var date1 = new Date(result[0].starttime)
+      var date1;
+      if(result[0]) date1 = new Date(result[0].starttime)
+      else date1 = new Date(currdate)
       var date2 = new Date(currdate)
 
       var difference = date2.getTime()-date1.getTime();
       var hours = Math.floor((difference / (1000*60*60)) % 24)
       var hourselapsed = {hours : hours}
-      var resultret = [{...result[0], ...hourselapsed}]
+      var resultret;
+      if(result[0]) resultret = [{...result[0], ...hourselapsed}]
+      else if (result) resultret = [{...result, ...hourselapsed}]
+      else resultret = [hourselapsed]
       res.status(200).json(resultret)
 
     });
