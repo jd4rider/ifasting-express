@@ -74,9 +74,10 @@ db.connect(function (err) {
 app.post('/api/login', async (req, res) => {
   // Read username and password from request body
   const { username, password } = req.body;
+  
 
   // Filter user from the users array by username and password
-  db.query('select * from users where username = ?', [username], async function(err, row) {
+  db.query('select * from users where lower(username) = lower(?)', [username], async function(err, row) {
     if (err) {
       return console.log(err.message);
     }
@@ -104,7 +105,7 @@ app.post('/api/login', async (req, res) => {
 app.get('/signup', async (req, res) => {
   const salt = await bcrypt.genSalt(10);
 
-  db.query('insert into users (username, fname, lname, password, userrole) values (?,?,?,?,?)', ['jd4rider', 'Jonathan', 'Forrider', await bcrypt.hash("password", salt), 'admin'], function(err, result) {
+  db.query('insert into users (username, fname, lname, password, userrole) values (lower(?),?,?,?,?)', ['jd4rider', 'Jonathan', 'Forrider', await bcrypt.hash("password", salt), 'admin'], function(err, result) {
     if (err) {
       return console.log(err.message);
     }
@@ -117,7 +118,7 @@ app.post('/api/signup', async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   const { username, password, fname, lname } = req.body;
 
-  db.query('insert into users (username, fname, lname, password, userrole) values (?,?,?,?,?)', [username, fname, lname, await bcrypt.hash(password, salt), 'user'], function(err, result) {
+  db.query('insert into users (username, fname, lname, password, userrole) values (lower(?),?,?,?,?)', [username, fname, lname, await bcrypt.hash(password, salt), 'user'], function(err, result) {
     if (err) {
       if(err.message.includes('Duplicate')) return res.status(201).json({ error: "User Already Exists" });
       else return console.log(err.message);
@@ -144,7 +145,7 @@ app.post('/api/tracker/start', authenticateJWT, async (req, res) => {
   const { username } = req.body;
   const starttime= new Date().toISOString().slice(0, 19).replace('T', ' ');
  
-  db.query('select id from users where username = ?', [username], (err, rows) => {
+  db.query('select id from users where lower(username) = lower(?)', [username], (err, rows) => {
     db.query('insert into tracker (starttime, userid) values (?,?)', [starttime, rows[0].id], function(err, result) {
       if (err) {
         return console.log(err.message);
@@ -162,7 +163,7 @@ app.put('/api/tracker/end', authenticateJWT, async (req, res) => {
   const { username } = req.body;
   const endtime = new Date().toISOString().slice(0, 19).replace('T', ' ');
  
-  db.query('select id from users where username = ?', [username], (err, rows) => {
+  db.query('select id from users where lower(username) = lower(?)', [username], (err, rows) => {
     db.query('update tracker set endtime = ? where userid = ? and trim(endtime) is null', [endtime, rows[0].id], function(err, result) {
       if (err) {
         return console.log(err.message);
@@ -178,7 +179,7 @@ app.put('/api/tracker/end', authenticateJWT, async (req, res) => {
 app.get('/api/tracker/get/all/:username', authenticateJWT,  async (req, res) => {
   const username = req.params.username || 'none';
 
-  db.query('select id from users where username = ?', [username], (err, rows) => {
+  db.query('select id from users where lower(username) = lower(?)', [username], (err, rows) => {
     db.query('select * from tracker where userid = ?', [rows[0].id], function(err, result) {
       if (err) {
         return console.log(err.message);
@@ -194,7 +195,7 @@ app.get('/api/tracker/get/unfinished/:username', authenticateJWT,  async (req, r
   const username = req.params.username || 'none';
   const currdate = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-  db.query('select id from users where username = ?', [username], (err, rows) => {
+  db.query('select id from users where lower(username) = lower(?)', [username], (err, rows) => {
     db.query('select * from tracker where userid = ? and trim(endtime) is null', [rows[0].id], function(err, result) {
       if (err) {
         return console.log(err.message);
